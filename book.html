@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Online Book Store</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+    body { background: #f4f7fb; color: #333; }
+    header {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: white;
+      padding: 20px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    .logo { font-size: 2rem; font-weight: bold; }
+    .nav-links button {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 10px 16px;
+      margin: 0 5px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .nav-links button:hover, .nav-links button.active { background: white; color: #4f46e5; }
+    .hero {
+      text-align: center;
+      padding: 50px 20px;
+      background: linear-gradient(to right, #eef2ff, #fdf4ff);
+    }
+    .hero h1 { font-size: 3rem; margin-bottom: 10px; }
+    .hero p { font-size: 1.2rem; color: #555; }
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      padding: 30px;
+    }
+    .card {
+      background: white;
+      padding: 25px;
+      border-radius: 20px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .card h3 { color: #666; margin-bottom: 10px; }
+    .card p { font-size: 2rem; font-weight: bold; color: #4f46e5; }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: center;
+      padding: 20px;
+    }
+    .controls input, .controls select {
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      min-width: 220px;
+    }
+    .book-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 25px;
+      padding: 30px;
+    }
+    .book-card {
+      background: white;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+    }
+    .book-card:hover { transform: translateY(-8px); }
+    .book-card img { width: 100%; height: 280px; object-fit: cover; }
+    .book-info { padding: 20px; }
+    .book-info h3 { margin-bottom: 8px; }
+    .price { color: #4f46e5; font-size: 1.3rem; font-weight: bold; margin: 10px 0; }
+    .rating { color: #f59e0b; margin-bottom: 10px; }
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .actions button {
+      flex: 1;
+      border: none;
+      padding: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .cart-btn { background: #4f46e5; color: white; }
+    .wish-btn { background: #ec4899; color: white; }
+    .view-btn { background: #10b981; color: white; }
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 20px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .close {
+      float: right;
+      font-size: 28px;
+      cursor: pointer;
+    }
+    footer {
+      text-align: center;
+      background: #1f2937;
+      color: white;
+      padding: 20px;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav>
+      <div class="logo">📚 BookVerse</div>
+      <div class="nav-links">
+        <button class="active" onclick="scrollToSection('home')">Home</button>
+        <button onclick="scrollToSection('store')">Store</button>
+        <button onclick="showCart()">Cart (<span id="cart-count">0</span>)</button>
+        <button onclick="showWishlist()">Wishlist (<span id="wish-count">0</span>)</button>
+      </div>
+    </nav>
+  </header>
+
+  <section class="hero" id="home">
+    <h1>Welcome to BookVerse</h1>
+    <p>Discover, explore, and buy your next favorite book.</p>
+  </section>
+
+  <section class="dashboard">
+    <div class="card"><h3>Total Books</h3><p id="total-books">0</p></div>
+    <div class="card"><h3>Cart Items</h3><p id="dashboard-cart">0</p></div>
+    <div class="card"><h3>Wishlist</h3><p id="dashboard-wish">0</p></div>
+    <div class="card"><h3>Total Price</h3><p>₹<span id="total-price">0</span></p></div>
+  </section>
+
+  <section id="store">
+    <div class="controls">
+      <input type="text" id="search" placeholder="Search by title or author...">
+      <select id="categoryFilter">
+        <option value="All">All Categories</option>
+        <option value="Fiction">Fiction</option>
+        <option value="Self Help">Self Help</option>
+        <option value="Programming">Programming</option>
+        <option value="Science">Science</option>
+        <option value="Biography">Biography</option>
+      </select>
+      <select id="sortFilter">
+        <option value="default">Sort By</option>
+        <option value="low">Price: Low to High</option>
+        <option value="high">Price: High to Low</option>
+        <option value="rating">Top Rated</option>
+      </select>
+    </div>
+
+    <div class="book-grid" id="book-list"></div>
+  </section>
+
+  <div class="modal" id="modal">
+    <div class="modal-content" id="modal-content"></div>
+  </div>
+
+  <footer>
+    <p>© 2026 BookVerse | Your Digital Library</p>
+  </footer>
+
+  <script>
+    const books = [
+      {id:1,title:'Atomic Habits',author:'James Clear',price:499,category:'Self Help',rating:4.9,image:'https://images.unsplash.com/photo-1544947950-fa07a98d237f',description:'Build good habits and break bad ones.'},
+      {id:2,title:'The Alchemist',author:'Paulo Coelho',price:299,category:'Fiction',rating:4.8,image:'https://images.unsplash.com/photo-1512820790803-83ca734da794',description:'A timeless tale of dreams and destiny.'},
+      {id:3,title:'Clean Code',author:'Robert C. Martin',price:699,category:'Programming',rating:4.9,image:'https://images.unsplash.com/photo-1495446815901-a7297e633e8d',description:'A handbook of agile software craftsmanship.'},
+      {id:4,title:'Deep Work',author:'Cal Newport',price:450,category:'Self Help',rating:4.7,image:'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f',description:'Rules for focused success.'},
+      {id:5,title:'Sapiens',author:'Yuval Noah Harari',price:550,category:'Science',rating:4.8,image:'https://images.unsplash.com/photo-1507842217343-583bb7270b66',description:'A brief history of humankind.'},
+      {id:6,title:'Steve Jobs',author:'Walter Isaacson',price:620,category:'Biography',rating:4.6,image:'https://images.unsplash.com/photo-1481627834876-b7833e8f5570',description:'The life of Apple co-founder Steve Jobs.'},
+      {id:7,title:'Rich Dad Poor Dad',author:'Robert Kiyosaki',price:399,category:'Self Help',rating:4.5,image:'https://images.unsplash.com/photo-1497633762265-9d179a990aa6',description:'Financial lessons everyone should know.'},
+      {id:8,title:'1984',author:'George Orwell',price:349,category:'Fiction',rating:4.7,image:'https://images.unsplash.com/photo-1474932430478-367dbb6832c1',description:'A classic dystopian novel.'}
+    ];
+
+    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+    let wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
+
+    function saveData() {
+      localStorage.setItem('cart', JSON.stringify(cart));
+      localStorage.setItem('wishlist', JSON.stringify(wishlist));
+    }
+
+    function renderBooks(list = books) {
+      const container = document.getElementById('book-list');
+      container.innerHTML = '';
+
+      list.forEach(book => {
+        const card = document.createElement('div');
+        card.className = 'book-card';
+        card.innerHTML = `
+          <img src="${book.image}" alt="${book.title}">
+          <div class="book-info">
+            <h3>${book.title}</h3>
+            <p>by ${book.author}</p>
+            <p class="rating">⭐ ${book.rating}</p>
+            <p class="price">₹${book.price}</p>
+            <div class="actions">
+              <button class="cart-btn" onclick="addToCart(${book.id})">Add to Cart</button>
+              <button class="wish-btn" onclick="addToWishlist(${book.id})">♥</button>
+              <button class="view-btn" onclick="viewBook(${book.id})">View</button>
+            </div>
+          </div>`;
+        container.appendChild(card);
+      });
+      updateDashboard();
+    }
+
+    function addToCart(id) {
+      const book = books.find(b => b.id === id);
+      cart.push(book);
+      saveData();
+      updateDashboard();
+      alert(`${book.title} added to cart.`);
+    }
+
+    function addToWishlist(id) {
+      const book = books.find(b => b.id === id);
+      if (!wishlist.some(item => item.id === id)) {
+        wishlist.push(book);
+        saveData();
+        updateDashboard();
+        alert(`${book.title} added to wishlist.`);
+      }
+    }
+
+    function updateDashboard() {
+      document.getElementById('total-books').textContent = books.length;
+      document.getElementById('cart-count').textContent = cart.length;
+      document.getElementById('wish-count').textContent = wishlist.length;
+      document.getElementById('dashboard-cart').textContent = cart.length;
+      document.getElementById('dashboard-wish').textContent = wishlist.length;
+      document.getElementById('total-price').textContent = cart.reduce((sum, b) => sum + b.price, 0);
+    }
+
+    function viewBook(id) {
+      const book = books.find(b => b.id === id);
+      document.getElementById('modal-content').innerHTML = `
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>${book.title}</h2>
+        <p><strong>Author:</strong> ${book.author}</p>
+        <p><strong>Category:</strong> ${book.category}</p>
+        <p><strong>Rating:</strong> ⭐ ${book.rating}</p>
+        <p><strong>Price:</strong> ₹${book.price}</p>
+        <br>
+        <p>${book.description}</p>`;
+      document.getElementById('modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('modal').style.display = 'none';
+    }
+
+    function showCart() {
+      const items = cart.length ? cart.map(b => `<li>${b.title} - ₹${b.price}</li>`).join('') : '<p>Cart is empty.</p>';
+      document.getElementById('modal-content').innerHTML = `
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>Your Cart</h2>
+        <ul>${items}</ul>
+        <h3>Total: ₹${cart.reduce((s,b)=>s+b.price,0)}</h3>`;
+      document.getElementById('modal').style.display = 'flex';
+    }
+
+    function showWishlist() {
+      const items = wishlist.length ? wishlist.map(b => `<li>${b.title}</li>`).join('') : '<p>Wishlist is empty.</p>';
+      document.getElementById('modal-content').innerHTML = `
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>Your Wishlist</h2>
+        <ul>${items}</ul>`;
+      document.getElementById('modal').style.display = 'flex';
+    }
+
+    function filterBooks() {
+      const search = document.getElementById('search').value.toLowerCase();
+      const category = document.getElementById('categoryFilter').value;
+      const sort = document.getElementById('sortFilter').value;
+
+      let filtered = books.filter(book =>
+        (book.title.toLowerCase().includes(search) || book.author.toLowerCase().includes(search)) &&
+        (category === 'All' || book.category === category)
+      );
+
+      if (sort === 'low') filtered.sort((a,b)=>a.price-b.price);
+      if (sort === 'high') filtered.sort((a,b)=>b.price-a.price);
+      if (sort === 'rating') filtered.sort((a,b)=>b.rating-a.rating);
+
+      renderBooks(filtered);
+    }
+
+    function scrollToSection(id) {
+      document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+    }
+
+    document.getElementById('search').addEventListener('input', filterBooks);
+    document.getElementById('categoryFilter').addEventListener('change', filterBooks);
+    document.getElementById('sortFilter').addEventListener('change', filterBooks);
+    window.onclick = e => { if (e.target.id === 'modal') closeModal(); };
+
+    renderBooks();
+  </script>
+</body>
+</html>
